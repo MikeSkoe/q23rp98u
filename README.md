@@ -1,12 +1,10 @@
+# q23rp98u
 ### Features
-
 - No VDOM
-- hole library in single file with 150 of readable code
+- hole library in single file with 150 lines of readable code
 - Build-in state manager
 - Update only those parts, that you know will update
-
-# q23rp98u
-
+- Called q23rp98u, cuz' no one will realy use this
 ## State Management
 The base idea, behind the library. The main pattern is something like 'property oriented pub-sub'. That means, that we explicitly say, which properties we update in actions and basign on which changes we should re-render some elements.
 
@@ -19,7 +17,7 @@ const state = {
 };
 ````
 Then we write actions, to update the state.
-````javascritp
+````javascript
 const incr = pub(['counter'], state => ({...state, counter: state.counter + 1}));
 const incrNested = pub(['nested_counter'], state => ({...state, nested: { counter: state.nested.counter + 1}}));
 const addTask = (label, key) => pub(['tasks'], state => ({...state, tasks: state.tasks.concat([{label, key}])}))();
