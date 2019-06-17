@@ -1,81 +1,91 @@
 ### Features
 
-- Lightweight element creator
-- Build-in state manager
-- List diffing without VDOM
-- Update only those parts, that you know will update
+- No VDOM
 - hole library in single file with 150 of readable code
+- Build-in state manager
+- Update only those parts, that you know will update
 
 # q23rp98u
 
-####Creating of elements.
-There is nothing new. Just use 'h' function, where first argument is tag name, second are properties of elements, and rest are children of the element.
+## State Management
+The base idea, behind the library. The main pattern is something like 'property oriented pub-sub'. That means, that we explicitly say, which properties we update in actions and basign on which changes we should re-render some elements.
 
-```javascript
-h('div', {onclick: () => conosle.log('hi')}, 'greed');
-```
-
-####State Management
-This is the main feacher of the library. The idea of what I whanted to test is, what if we subscribe to updates of concrete fields of state. Some thing like 'state field oriented pub-sub patter'.
-Say, we have a state like:
-```javascript
-{
-	counter: 0,
-	tasks: [],
-}
-```
-First, let's make some actions to change our state
+For example we have a state, like:
 ````javascript
+const state = {
+  counter: 0,
+  nested: { counter: 100 },
+  tasks: [{title: one, key: 0}, {label: two, key: 1],
+};
+````
+Then we write actions, to update the state.
+````javascritp
 const incr = pub(['counter'], state => ({...state, counter: state.counter + 1}));
-const addtask = title => 
-	pub(['tasks'], state => ({...state, tasks: [...state.tasks, {title}]}))();
+const incrNested = pub(['nested_counter'], state => ({...state, nested: { counter: state.nested.counter + 1}}));
+const addTask = (label, key) => pub(['tasks'], state => ({...state, tasks: state.tasks.concat([{label, key}])}))();
 ````
-so we can trigger the changes
-````javascript
-incr(); \\ counter: 1
-incr(); \\ counter: 2
-addTask('one'); \\ tasks: [{title: 'one'}]
-addTask('two'); \\ tasks: [{title: 'one'}, {title: 'two'}]
-````
-Now, we need to subscribe to certain changes
-````javascript
-const h1 = h('h1', {}, 'default title');
-sub(['counter'], counter => h1.innerText = `counter: ${counter}`);
-````
-here h1 will update its content only on update of 'counter' field of state.
-As you can see, changing state, we explicitly say, which fields of a state we are updatig. Then we explicitly say, on changes of what field we need some behaviour.
+There is some things to note:
+* first argument is an array, where we list every properties, that is changing
+* if we need to describe nested properties, we use underscores
+* pub function returns function, that takes nothing and update the state
 
-####Usage
-To get all features we should initialize our initial state
+And finally we subscribe to updates of certain state properties
 ````javascript
-import { init } form 'q23rp98u';
-const {h, pub, sub, el, map, text} = init({counter: 0, tasks: []});
+const unsub = sub(['counter'], counter => h1.innerText = `counter: ${counter}`);
+h1.delete = () => {
+  unsub();
+  h1.remove();
+};
 ````
-
-###Helpers
-As you can see above, we also have additional functions, like el, map, text. Let's see them in action
-####el
-When we should render elements, depending on sertain state 'el' is used
+## Helpers
+To make life hapier and code lighter, we have functions some cool functions, like:
+#### h
+It is something like 'h' function in hyper-script. Everything is exactly the same:
 ````javascript
-const even = h('h1', {}, 'Couner is Even');
-const odd = h('h1', {}, 'Counter is Odd');
-const evenOrOdd = el(counter => counter % 2 === 0 ? even : odd);
-
-const counterShower = ctr => h('h2', {}, `counter: ${ctr}`);
-const showCounter = el(counter => ctr(counter));
+const h1 = h('h1', {onclick: () => 'hello', id: 'title'}, 'Title, yo');
 ````
-Here we are not listing keys of all needed state properties. Keys are took from function's arguments.
-If we need to subscribe to some nested properties, underscore is used
+First argument - tag name
+Second - properties of an element
+Rest - children
+#### el
+Gives additional abilities to create responsive element
 ````javascript
-el(nested_counter => h('h1', {}, `state.nested.counter: ${nested_counter}`));
+const responsiveH1 = el(
+  counter => h('h1', {onclick: incr}, `counter: ${counter}`),
+  {
+    onCreate: () => console.log('im burn'), 
+    onUpdate: () => console.log('im updating'), 
+    onRemove: () => console.log('im dying'),
+  }
+);
 ````
-
-####map
-It is also something, that takes keys for subscription from funciton agruments, so it looks uglyer, but shorter
+* Keys, to subscribe on state changes are taken from names of arguments, sended to 'el' function, so argument 'counter' represent 'state.counter' property
+* Second argument - object with lifecycle callbacks
+#### map
+The library has no VDOM, but cat diff lists. To do so we have to folow some rules:
 ````javascript
-const Task = task => h('div', {classname: 'task', key: task.id}, task.title);
-h('div', {},
-	map(tasks => Task(tasks))
+const Task = (title, key) => h('div', {key}, title);
+const app = h('div', {},
+  ...map(
+    tasks => Task(tasks.title, tasks.key), 
+    (prevValue, newValue) => prevValue.title !== newValue.title)
+  )
 )
 ````
-For diffing to work correct, every item in array and every element should have 'key'
+* Every item in state's list should have 'key' property as unique idetifier
+* Every main element in array should have 'key' property. Probably is looks redundant, but it helps make diffing of changes in array and update only changed items
+* You should never use 'el', as direct item in 'map'. It will crash your app on change. (its 150 lines code library, c'mon!)
+* Second argument of 'map' function is something like "should component update"
+#### text
+When we need to update only some text, base on state - 'text' is the right tool to use
+````javascript
+const title = h('h1', {className: 'title'}, text(counter => `counter: ${counter}`));
+````
+* Here keys are also taken from function's argument names
+
+## Usage
+To get all functions we should send initial state to 'init' function;
+````javascript
+import {init} from './q23rp98u'
+const {pub, sub, el, text, map, h} = init({counter: 0, tasks: []});
+````
