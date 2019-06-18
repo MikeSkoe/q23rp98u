@@ -79,6 +79,7 @@ const Row = item => {
 	const comp = h('tr',
 		{ 
 			key: item.key, 
+			style: {fontSize: '2rem'},
 		},
 		h('td', {className: 'col-md-1'}, `${item.key}`),
 		h('td', {className: 'col-md-4'}, h('a', {onclick: SELECT(item.key)}, `${item.label}`)),

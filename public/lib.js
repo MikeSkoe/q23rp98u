@@ -1,4 +1,4 @@
-const docFn = str => document[str].bind(document),
+export const docFn = str => document[str].bind(document),
 	q = docFn('querySelector'),
 	c = docFn('createElement'),
 	t = docFn('createTextNode');
@@ -6,6 +6,24 @@ const docFn = str => document[str].bind(document),
 const insertAfter = (oldEl, newEl) => oldEl.parentNode.insertBefore(newEl, oldEl.nextSibling);
 const camelToDot = str => str.split('_');
 const getArgs = fn => ('' + fn).match(/(\(|^)(?<a>.+?)[=\)]/).groups['a'].trim().split(', ');
+const notIn = arr => item => !arr.some(i => i.key === item.key);
+const getIn = (arr, key) => arr.find(i => i.key === key);
+const options = {
+	'object': (obj, el) => el.appendChild(obj),
+	'string': (str, el) => options['object'](t(str), el),
+};
+
+const h = (state, sub) => (name, attrs = {}, ...children) => {
+	const {style, ...restAttrs} = attrs;
+	const el = Object.assign(
+		c(name),
+		{mount: selector => q(selector).appendChild(el)},
+		restAttrs,
+	);
+	Object.assign(el.style, style);
+	children.forEach(child => options[(typeof child)](child, el));
+	return el;
+};
 
 const sub = callbacks => (keys, fn, unsub = false) => {
 	keys.forEach(key => {
@@ -20,23 +38,8 @@ const sub = callbacks => (keys, fn, unsub = false) => {
 const pub = (callbacks, state) => (keys, fn) => () => {
 	state(fn(state()));
 	keys.forEach(key => {
-		(callbacks[key] || []).forEach(fn => fn(...keys.map(key => state(key))))
+		(callbacks[key] || []).forEach(fn => fn(state(key)))
 	});
-};
-
-const options = {
-	'object': (obj, el) => el.appendChild(obj),
-	'string': (str, el) => options['object'](t(str), el),
-};
-
-const h = (state, sub) => (name, attrs = {}, ...children) => {
-	const el = c(name);
-	el.mount = selector => q(selector).appendChild(el);
-	const {style, ...restAttrs} = attrs;
-	Object.assign(el, restAttrs);
-	Object.assign(el.style, style);
-	children.forEach(child => options[(typeof child)](child, el));
-	return el;
 };
 
 const text = (state, sub) => fn => {
@@ -48,8 +51,7 @@ const text = (state, sub) => fn => {
 
 const el = (state, sub) => (fn, lifeCycle = {}) => {
 	const fnArgs = getArgs(fn);
-	lifeCycle.onCreate 
-		&& lifeCycle.onCreate(...getArgs(lifeCycle.onCreate).map(arg => state()[arg]));
+	lifeCycle.onCreate && lifeCycle.onCreate(...getArgs(lifeCycle.onCreate).map(arg => state()[arg]));
 	let currEl = fn(...fnArgs.map(arg => state()[arg]));
 	let prevVals = fnArgs.map(arg => state()[arg]);
 	const subscription = (...stVals) => {
@@ -59,12 +61,13 @@ const el = (state, sub) => (fn, lifeCycle = {}) => {
 			const newEl = fn(...stVals);
 			currEl.replaceWith(newEl);
 			currEl = newEl;
+			lifeCycle.onUpdate && lifeCycle.onUpdate(...getArgs(lifeCycle.onUpdate).map(arg => state(arg)));
 		}
 		prevVals = stVals;
 	};
 	const unsub = sub(fnArgs, subscription);
 	currEl.del = () => {
-		try { lifeCycle.onRemove() } catch { console.log('no onremove cycle') };
+		lifeCycle.onRemove && lifeCycle.onRemove(...getArgs(lifeCycle.onRemove).map(arg => state(arg)));
 		unsub();
 		currEl.remove();
 	};
@@ -78,9 +81,6 @@ const getSetState = initialState => value => {
 			? camelToDot(value).reduce((acc, cur) => acc[cur], initialState)
 			: initialState = value
 }
-
-const notIn = arr => item => !arr.some(i => i.key === item.key);
-const getIn = (arr, key) => arr.find(i => i.key === key);
 
 const map = (state, sub) => 
 	(fn, shouldUpdate = (pV, nV) => JSON.stringify(pV) !== JSON.stringify(nV)) => 
