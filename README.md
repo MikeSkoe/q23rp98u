@@ -1,14 +1,14 @@
 # q23rp98u
 ### Features
 - No VDOM
-- hole library in single file with 150 lines of readable code
+- whole library in a single file with 150 lines of readable code
 - Build-in state manager
 - Update only those parts, that you know will update
-- Called q23rp98u, cuz' no one will realy use this
+- Called q23rp98u, cuz' no one will really use this
 ## State Management
-The base idea, behind the library. The main pattern is something like 'property oriented pub-sub'. That means, that we explicitly say, which properties we update in actions and basign on which changes we should re-render some elements.
+The base idea, behind the library. The main pattern is something like 'property oriented pub-sub'. That means, that we explicitly say, which properties we update in actions and based on which changes we should re-render some elements.
 
-For example we have a state, like:
+For example, we have a state, like:
 ````javascript
 const state = {
   counter: 0,
