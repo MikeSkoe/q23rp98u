@@ -87,3 +87,9 @@ To get all functions we should send initial state to 'init' function;
 import {init} from './q23rp98u'
 const {pub, sub, el, text, map, h} = init({counter: 0, tasks: []});
 ````
+
+## Try
+````
+node server.js
+````
+go to localhost:3000
