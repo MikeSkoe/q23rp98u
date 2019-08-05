@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "target": "esnext"
+  }
+}
